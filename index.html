@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DexRGB - Minecraft RGB Gradient Generator</title>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0b0e14;
+            --card-bg: #121824;
+            --card-border: #1e293b;
+            --accent-cyan: #54daf4;
+            --accent-purple: #545eb6;
+            --accent-glow: rgba(84, 218, 244, 0.15);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --button-hover: #1e293b;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- NAVBAR --- */
+        navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background-color: rgba(18, 24, 36, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--accent-cyan);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            list-style: none;
+            font-size: 0.9rem;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-main);
+        }
+
+        /* --- CONTAINER --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            width: 100%;
+            flex: 1;
+        }
+
+        /* --- MAIN HEADER --- */
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-action {
+            background: #172033;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* --- INPUT & PREVIEW CARD --- */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .input-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .input-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+
+        .text-input {
+            width: 100%;
+            background-color: #0b0e14;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            color: #fff;
+            padding: 10px 14px;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .text-input:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .formatting-tools {
+            display: flex;
+            gap: 5px;
+            background: #0b0e14;
+            padding: 4px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+        }
+
+        .btn-tool {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-tool:hover, .btn-tool.active {
+            background: var(--card-border);
+            color: #fff;
+        }
+
+        /* PREVIEW DISPLAY */
+        .preview-box {
+            background: #07090e;
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 1px;
+            overflow-x: auto;
+            word-break: break-word;
+        }
+
+        .gradient-slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            margin-top: 15px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+        }
+
+        /* --- 3 COLUMN GRID --- */
+        .control-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .grid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .grid-header h3 {
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* COLOR SECTION */
+        .color-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .color-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0b0e14;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+        }
+
+        .color-picker-wrapper {
+            width: 100%;
+            height: 32px;
+            border-radius: 4px;
+            overflow: hidden;
+            border: none;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .color-picker {
+            width: 150%;
+            height: 150%;
+            transform: translate(-10%, -10%);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-icon {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        .btn-icon:hover {
+            color: var(--danger);
+        }
+
+        /* OUTPUT SECTION */
+        .output-box {
+            width: 100%;
+            height: 140px;
+            background: #07090e;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            color: #10b981;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            padding: 12px;
+            resize: none;
+            outline: none;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+
+        select.custom-select {
+            background: #0b0e14;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* PRESET & IMPORT SECTION */
+        .preset-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: #0b0e14;
+            border: 1px solid var(--card-border);
+            color: var(--text-muted);
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: var(--card-border);
+            color: #fff;
+        }
+
+        .json-input {
+            width: 100%;
+            background: #0b0e14;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 8px;
+            color: var(--text-main);
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            outline: none;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            color: #000;
+            font-weight: 700;
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: opacity 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        /* FOOTER */
+        footer {
+            margin-top: 3rem;
+            padding: 2rem 0;
+            border-top: 1px solid var(--card-border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <navbar>
+        <a href="#" class="brand">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> DexRGB
+        </a>
+        <ul class="nav-links">
+            <li><a href="#"><i class="fa-solid fa-book"></i> Documentation</a></li>
+            <li><a href="#"><i class="fa-solid fa-server"></i> Hosting <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i></a></li>
+            <li><a href="#"><i class="fa-solid fa-cube"></i> Resources <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i></a></li>
+            <li><a href="#"><i class="fa-solid fa-globe"></i> EN</a></li>
+            <li><a href="#"><i class="fa-solid fa-gear"></i></a></li>
+            <li><a href="#"><i class="fa-brands fa-github"></i></a></li>
+            <li><a href="#"><i class="fa-brands fa-discord"></i></a></li>
+            <li><a href="#" class="btn-action">Sign In</a></li>
+        </ul>
+    </navbar>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+        
+        <!-- HEADER SECTION -->
+        <div class="header-section">
+            <div class="header-title">
+                <h1><i class="fa-solid fa-palette" style="color: var(--accent-cyan);"></i> DexRGB</h1>
+                <p>Automated HEX Gradient Creator for Minecraft format codes.</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-action"><i class="fa-solid fa-wifi"></i> TAB Animation</button>
+                <button class="btn-action"><i class="fa-solid fa-sliders"></i> DexRGB Extended</button>
+            </div>
+        </div>
+
+        <!-- MAIN CARD: INPUT & PREVIEW -->
+        <div class="card">
+            <div class="input-bar">
+                <div class="input-label">
+                    <i class="fa-solid fa-terminal"></i> Input Text
+                </div>
+                <div class="formatting-tools">
+                    <select class="custom-select" style="font-size:0.8rem;">
+                        <option>Default Font</option>
+                        <option>Minecraft Bold</option>
+                    </select>
+                    <button class="btn-tool" id="btn-bold" title="Bold"><i class="fa-solid fa-bold"></i></button>
+                    <button class="btn-tool" id="btn-italic" title="Italic"><i class="fa-solid fa-italic"></i></button>
+                    <button class="btn-tool" id="btn-underline" title="Underline"><i class="fa-solid fa-underline"></i></button>
+                    <button class="btn-tool" id="btn-strike" title="Strikethrough"><i class="fa-solid fa-strikethrough"></i></button>
+                </div>
+            </div>
+
+            <input type="text" id="text-input" class="text-input" value="DexRGB" placeholder="Type here to generate gradient...">
+
+            <!-- LIVE PREVIEW DISPLAY -->
+            <div class="preview-box" id="preview-display">DexRGB</div>
+            <div class="gradient-slider" id="gradient-bar"></div>
+        </div>
+
+        <!-- 3-COLUMN CONTROLS -->
+        <div class="control-grid">
+            
+            <!-- COLUMN 1: COLORS -->
+            <div class="card">
+                <div class="grid-header">
+                    <h3><i class="fa-solid fa-palette"></i> Colors</h3>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <button class="btn-action" id="remove-color-btn" style="padding: 2px 8px;">-</button>
+                        <span id="color-count" style="font-size: 0.85rem; font-weight: bold;">2</span>
+                        <button class="btn-action" id="add-color-btn" style="padding: 2px 8px;">+</button>
+                    </div>
+                </div>
+
+                <div class="color-list" id="color-list">
+                    <!-- Color items dynamically rendered by JS -->
+                </div>
+            </div>
+
+            <!-- COLUMN 2: OUTPUT -->
+            <div class="card">
+                <div class="grid-header">
+                    <h3><i class="fa-solid fa-code"></i> Output</h3>
+                    <select class="custom-select" id="format-select">
+                        <option value="chat">&#rrggbb (Chat/Plugins)</option>
+                        <option value="legacy">&x&r&r&g&g&b&b (Legacy 1.16+)</option>
+                        <option value="minimessage">&lt;#rrggbb&gt; (MiniMessage)</option>
+                        <option value="cmi">{#rrggbb} (CMI)</option>
+                    </select>
+                </div>
+
+                <textarea class="output-box" id="output-text" readonly></textarea>
+
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-action" style="flex:1;"><i class="fa-solid fa-sliders"></i> Advanced Options</button>
+                    <button class="btn-action" style="flex:1;"><i class="fa-solid fa-wand-magic"></i> Decode</button>
+                </div>
+            </div>
+
+            <!-- COLUMN 3: PRESETS & EXPORT -->
+            <div class="card">
+                <div class="grid-header">
+                    <h3><i class="fa-solid fa-bookmark"></i> Presets</h3>
+                </div>
+
+                <div class="preset-tabs">
+                    <button class="tab-btn active"><i class="fa-solid fa-floppy-disk"></i> Presets</button>
+                    <button class="tab-btn"><i class="fa-solid fa-download"></i> Save</button>
+                    <button class="tab-btn"><i class="fa-solid fa-compass"></i> Browse</button>
+                </div>
+
+                <p style="font-size:0.8rem; color: var(--text-muted); margin-bottom: 5px;">Import JSON Preset</p>
+                <input type="text" class="json-input" placeholder="Paste a JSON preset here">
+
+                <button class="btn-primary" id="copy-btn"><i class="fa-solid fa-copy"></i> Copy Output</button>
+                <button class="btn-action" style="width: 100%; justify-content: center;"><i class="fa-solid fa-link"></i> Get Shareable URL</button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>DexRGB is a free and open-source Minecraft RGB gradient creator that generates hex-formatted text for servers.</p>
+        <p style="margin-top: 5px;">Customized GUI HUD inspired by modern web tools.</p>
+    </footer>
+
+    <!-- LOGIC / JAVASCRIPT -->
+    <script>
+        // DOM Elements
+        const textInput = document.getElementById('text-input');
+        const previewDisplay = document.getElementById('preview-display');
+        const gradientBar = document.getElementById('gradient-bar');
+        const outputText = document.getElementById('output-text');
+        const colorList = document.getElementById('color-list');
+        const formatSelect = document.getElementById('format-select');
+        const addColorBtn = document.getElementById('add-color-btn');
+        const removeColorBtn = document.getElementById('remove-color-btn');
+        const colorCountSpan = document.getElementById('color-count');
+        const copyBtn = document.getElementById('copy-btn');
+
+        // State variables
+        let colors = ['#54daf4', '#545eb6']; // Default HUD Colors from user screenshot
+        let isBold = false;
+        let isItalic = false;
+
+        // Toggle Formatting
+        document.getElementById('btn-bold').addEventListener('click', (e) => {
+            isBold = !isBold;
+            e.currentTarget.classList.toggle('active');
+            updateGradient();
+        });
+
+        document.getElementById('btn-italic').addEventListener('click', (e) => {
+            isItalic = !isItalic;
+            e.currentTarget.classList.toggle('active');
+            updateGradient();
+        });
+
+        // Color Utilities
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        function rgbToHex(r, g, b) {
+            return "#" + (1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1);
+        }
+
+        function interpolateColor(color1, color2, factor) {
+            const c1 = hexToRgb(color1);
+            const c2 = hexToRgb(color2);
+            const r = Math.round(c1.r + factor * (c2.r - c1.r));
+            const g = Math.round(c1.g + factor * (c2.g - c1.g));
+            const b = Math.round(c1.b + factor * (c2.b - c1.b));
+            return rgbToHex(r, g, b);
+        }
+
+        function getMultiGradientColor(colors, factor) {
+            if (colors.length === 1) return colors[0];
+            const segment = 1 / (colors.length - 1);
+            const index = Math.min(Math.floor(factor / segment), colors.length - 2);
+            const subFactor = (factor - (index * segment)) / segment;
+            return interpolateColor(colors[index], colors[index + 1], subFactor);
+        }
+
+        // Format Generators
+        function formatChar(char, hex, format) {
+            const cleanHex = hex.replace('#', '');
+            let prefix = '';
+
+            switch(format) {
+                case 'chat':
+                    prefix = `&#${cleanHex}`;
+                    break;
+                case 'legacy':
+                    prefix = `&x` + cleanHex.split('').map(c => `&${c}`).join('');
+                    break;
+                case 'minimessage':
+                    prefix = `<#${cleanHex}>`;
+                    break;
+                case 'cmi':
+                    prefix = `{#${cleanHex}}`;
+                    break;
+            }
+
+            if (isBold) prefix += '&l';
+            if (isItalic) prefix += '&o';
+
+            return prefix + char;
+        }
+
+        // Render UI Elements
+        function renderColorPickers() {
+            colorList.innerHTML = '';
+            colors.forEach((col, idx) => {
+                const row = document.createElement('div');
+                row.className = 'color-row';
+                row.innerHTML = `
+                    <span style="font-size:0.8rem; color:var(--text-muted);">${idx + 1}</span>
+                    <div class="color-picker-wrapper">
+                        <input type="color" class="color-picker" value="${col}" data-index="${idx}">
+                    </div>
+                    <button class="btn-icon" onclick="removeColor(${idx})"><i class="fa-solid fa-trash"></i></button>
+                `;
+                colorList.appendChild(row);
+            });
+
+            // Re-attach event listeners
+            document.querySelectorAll('.color-picker').forEach(picker => {
+                picker.addEventListener('input', (e) => {
+                    const idx = e.target.getAttribute('data-index');
+                    colors[idx] = e.target.value;
+                    updateGradient();
+                });
+            });
+
+            colorCountSpan.innerText = colors.length;
+        }
+
+        function removeColor(index) {
+            if (colors.length > 2) {
+                colors.splice(index, 1);
+                renderColorPickers();
+                updateGradient();
+            }
+        }
+
+        // Main Update Function
+        function updateGradient() {
+            const text = textInput.value || "DexRGB";
+            const format = formatSelect.value;
+            
+            let previewHTML = '';
+            let formattedOutput = '';
+
+            const len = text.length;
+
+            for (let i = 0; i < len; i++) {
+                const factor = len > 1 ? i / (len - 1) : 0;
+                const hexColor = getMultiGradientColor(colors, factor);
+                
+                // HTML Preview
+                let style = `color: ${hexColor};`;
+                if (isBold) style += 'font-weight: bold;';
+                if (isItalic) style += 'font-style: italic;';
+                
+                previewHTML += `<span style="${style}">${text[i]}</span>`;
+
+                // Text Code Output
+                formattedOutput += formatChar(text[i], hexColor, format);
+            }
+
+            previewDisplay.innerHTML = previewHTML;
+            outputText.value = formattedOutput;
+
+            // Update bottom slider bar gradient
+            gradientBar.style.background = `linear-gradient(90deg, ${colors.join(', ')})`;
+        }
+
+        // Event Listeners
+        textInput.addEventListener('input', updateGradient);
+        formatSelect.addEventListener('change', updateGradient);
+
+        addColorBtn.addEventListener('click', () => {
+            colors.push('#ffffff');
+            renderColorPickers();
+            updateGradient();
+        });
+
+        removeColorBtn.addEventListener('click', () => {
+            if (colors.length > 2) {
+                colors.pop();
+                renderColorPickers();
+                updateGradient();
+            }
+        });
+
+        copyBtn.addEventListener('click', () => {
+            outputText.select();
+            navigator.clipboard.writeText(outputText.value);
+            const originalText = copyBtn.innerHTML;
+            copyBtn.innerHTML = `<i class="fa-solid fa-check"></i> Copied!`;
+            setTimeout(() => {
+                copyBtn.innerHTML = originalText;
+            }, 2000);
+        });
+
+        // Initialize App
+        renderColorPickers();
+        updateGradient();
+    </script>
+</body>
+</html>
