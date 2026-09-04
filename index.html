@@ -7,7 +7,7 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-dark: #0b0e14;
@@ -18,8 +18,8 @@
             --accent-glow: rgba(84, 218, 244, 0.15);
             --text-main: #f1f5f9;
             --text-muted: #94a3b8;
-            --button-hover: #1e293b;
             --danger: #ef4444;
+            --success: #10b981;
         }
 
         * {
@@ -56,6 +56,7 @@
             font-size: 1.25rem;
             color: var(--accent-cyan);
             text-decoration: none;
+            cursor: pointer;
         }
 
         .nav-links {
@@ -94,6 +95,8 @@
             justify-content: space-between;
             align-items: flex-start;
             margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 15px;
         }
 
         .header-title h1 {
@@ -128,9 +131,10 @@
             transition: all 0.2s;
         }
 
-        .btn-action:hover {
+        .btn-action:hover, .btn-action.active {
             border-color: var(--accent-cyan);
             box-shadow: 0 0 10px var(--accent-glow);
+            color: var(--accent-cyan);
         }
 
         /* --- INPUT & PREVIEW CARD --- */
@@ -184,6 +188,7 @@
             padding: 4px;
             border-radius: 6px;
             border: 1px solid var(--card-border);
+            align-items: center;
         }
 
         .btn-tool {
@@ -193,11 +198,12 @@
             padding: 6px 10px;
             border-radius: 4px;
             cursor: pointer;
+            transition: all 0.2s;
         }
 
         .btn-tool:hover, .btn-tool.active {
             background: var(--card-border);
-            color: #fff;
+            color: var(--accent-cyan);
         }
 
         /* PREVIEW DISPLAY */
@@ -207,8 +213,7 @@
             border-radius: 8px;
             padding: 2.5rem 1.5rem;
             text-align: center;
-            font-size: 2.5rem;
-            font-weight: 700;
+            font-size: 2.2rem;
             min-height: 120px;
             display: flex;
             align-items: center;
@@ -216,6 +221,16 @@
             letter-spacing: 1px;
             overflow-x: auto;
             word-break: break-word;
+            transition: font-family 0.2s;
+        }
+
+        .preview-box.font-minecraft {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 1.5rem;
+        }
+
+        .preview-box.font-code {
+            font-family: 'Fira Code', monospace;
         }
 
         .gradient-slider {
@@ -260,7 +275,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            max-height: 200px;
+            max-height: 220px;
             overflow-y: auto;
             padding-right: 5px;
         }
@@ -313,7 +328,7 @@
             background: #07090e;
             border: 1px solid var(--card-border);
             border-radius: 6px;
-            color: #10b981;
+            color: var(--success);
             font-family: 'Fira Code', monospace;
             font-size: 0.85rem;
             padding: 12px;
@@ -333,6 +348,28 @@
             cursor: pointer;
         }
 
+        /* ADVANCED OPTIONS DRAWER */
+        .advanced-drawer {
+            display: none;
+            background: #0b0e14;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+
+        .advanced-drawer.active {
+            display: block;
+        }
+
+        .advanced-option-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
         /* PRESET & IMPORT SECTION */
         .preset-tabs {
             display: flex;
@@ -349,11 +386,45 @@
             border-radius: 6px;
             font-size: 0.8rem;
             cursor: pointer;
+            transition: all 0.2s;
         }
 
         .tab-btn.active {
             background: var(--card-border);
             color: #fff;
+            border-color: var(--accent-cyan);
+        }
+
+        .preset-view {
+            display: none;
+        }
+
+        .preset-view.active {
+            display: block;
+        }
+
+        .preset-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .chip {
+            background: #0b0e14;
+            border: 1px solid var(--card-border);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chip:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
         }
 
         .json-input {
@@ -389,6 +460,31 @@
             opacity: 0.9;
         }
 
+        /* TOAST NOTIFICATION */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--accent-cyan);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
         /* FOOTER */
         footer {
             margin-top: 3rem;
@@ -404,18 +500,18 @@
 
     <!-- NAVBAR -->
     <navbar>
-        <a href="#" class="brand">
+        <a href="#" class="brand" id="brand-link">
             <i class="fa-solid fa-wand-magic-sparkles"></i> DexRGB
         </a>
         <ul class="nav-links">
-            <li><a href="#"><i class="fa-solid fa-book"></i> Documentation</a></li>
-            <li><a href="#"><i class="fa-solid fa-server"></i> Hosting <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i></a></li>
-            <li><a href="#"><i class="fa-solid fa-cube"></i> Resources <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i></a></li>
-            <li><a href="#"><i class="fa-solid fa-globe"></i> EN</a></li>
-            <li><a href="#"><i class="fa-solid fa-gear"></i></a></li>
-            <li><a href="#"><i class="fa-brands fa-github"></i></a></li>
-            <li><a href="#"><i class="fa-brands fa-discord"></i></a></li>
-            <li><a href="#" class="btn-action">Sign In</a></li>
+            <li><a href="#" id="nav-docs"><i class="fa-solid fa-book"></i> Documentation</a></li>
+            <li><a href="#" id="nav-hosting"><i class="fa-solid fa-server"></i> Hosting <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i></a></li>
+            <li><a href="#" id="nav-resources"><i class="fa-solid fa-cube"></i> Resources <i class="fa-solid fa-chevron-down" style="font-size: 10px;"></i></a></li>
+            <li><a href="#" id="nav-lang"><i class="fa-solid fa-globe"></i> EN</a></li>
+            <li><a href="#" id="nav-settings"><i class="fa-solid fa-gear"></i></a></li>
+            <li><a href="https://github.com" target="_blank"><i class="fa-brands fa-github"></i></a></li>
+            <li><a href="https://discord.com" target="_blank"><i class="fa-brands fa-discord"></i></a></li>
+            <li><a href="#" class="btn-action" id="btn-login">Sign In</a></li>
         </ul>
     </navbar>
 
@@ -429,8 +525,8 @@
                 <p>Automated HEX Gradient Creator for Minecraft format codes.</p>
             </div>
             <div class="header-actions">
-                <button class="btn-action"><i class="fa-solid fa-wifi"></i> TAB Animation</button>
-                <button class="btn-action"><i class="fa-solid fa-sliders"></i> DexRGB Extended</button>
+                <button class="btn-action" id="btn-tab-anim"><i class="fa-solid fa-wifi"></i> TAB Animation Mode</button>
+                <button class="btn-action" id="btn-randomize"><i class="fa-solid fa-dice"></i> Randomize Colors</button>
             </div>
         </div>
 
@@ -441,9 +537,10 @@
                     <i class="fa-solid fa-terminal"></i> Input Text
                 </div>
                 <div class="formatting-tools">
-                    <select class="custom-select" style="font-size:0.8rem;">
-                        <option>Default Font</option>
-                        <option>Minecraft Bold</option>
+                    <select class="custom-select" id="font-select" style="font-size:0.8rem;">
+                        <option value="default">Default Font</option>
+                        <option value="minecraft">Minecraft Pixel Font</option>
+                        <option value="code">Monospace Code Font</option>
                     </select>
                     <button class="btn-tool" id="btn-bold" title="Bold"><i class="fa-solid fa-bold"></i></button>
                     <button class="btn-tool" id="btn-italic" title="Italic"><i class="fa-solid fa-italic"></i></button>
@@ -452,10 +549,10 @@
                 </div>
             </div>
 
-            <input type="text" id="text-input" class="text-input" value="DexRGB" placeholder="Type here to generate gradient...">
+            <input type="text" id="text-input" class="text-input" value="AMYCPS" placeholder="Type here to generate gradient...">
 
             <!-- LIVE PREVIEW DISPLAY -->
-            <div class="preview-box" id="preview-display">DexRGB</div>
+            <div class="preview-box" id="preview-display">AMYCPS</div>
             <div class="gradient-slider" id="gradient-bar"></div>
         </div>
 
@@ -467,6 +564,7 @@
                 <div class="grid-header">
                     <h3><i class="fa-solid fa-palette"></i> Colors</h3>
                     <div style="display: flex; gap: 5px; align-items: center;">
+                        <button class="btn-action" id="btn-reverse-colors" title="Reverse Colors" style="padding: 2px 8px;"><i class="fa-solid fa-arrows-rotate"></i></button>
                         <button class="btn-action" id="remove-color-btn" style="padding: 2px 8px;">-</button>
                         <span id="color-count" style="font-size: 0.85rem; font-weight: bold;">2</span>
                         <button class="btn-action" id="add-color-btn" style="padding: 2px 8px;">+</button>
@@ -483,48 +581,81 @@
                 <div class="grid-header">
                     <h3><i class="fa-solid fa-code"></i> Output</h3>
                     <select class="custom-select" id="format-select">
-                        <option value="chat">&#rrggbb (Chat/Plugins)</option>
+                        <option value="chat">&#rrggbb (Chat / EssentialsX)</option>
                         <option value="legacy">&x&r&r&g&g&b&b (Legacy 1.16+)</option>
                         <option value="minimessage">&lt;#rrggbb&gt; (MiniMessage)</option>
                         <option value="cmi">{#rrggbb} (CMI)</option>
                     </select>
                 </div>
 
-                <textarea class="output-box" id="output-text" readonly></textarea>
+                <textarea class="output-box" id="output-text" placeholder="Generated code will appear here..."></textarea>
 
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn-action" style="flex:1;"><i class="fa-solid fa-sliders"></i> Advanced Options</button>
-                    <button class="btn-action" style="flex:1;"><i class="fa-solid fa-wand-magic"></i> Decode</button>
+                    <button class="btn-action" id="btn-toggle-advanced" style="flex:1;"><i class="fa-solid fa-sliders"></i> Advanced Options</button>
+                    <button class="btn-action" id="btn-decode" style="flex:1;"><i class="fa-solid fa-wand-magic"></i> Decode Input</button>
+                </div>
+
+                <!-- ADVANCED OPTIONS PANEL -->
+                <div class="advanced-drawer" id="advanced-drawer">
+                    <div class="advanced-option-row">
+                        <label for="uppercase-hex">Uppercase HEX:</label>
+                        <input type="checkbox" id="uppercase-hex">
+                    </div>
+                    <div class="advanced-option-row">
+                        <label for="trim-spaces">Strip formatting on spaces:</label>
+                        <input type="checkbox" id="trim-spaces" checked>
+                    </div>
                 </div>
             </div>
 
             <!-- COLUMN 3: PRESETS & EXPORT -->
             <div class="card">
                 <div class="grid-header">
-                    <h3><i class="fa-solid fa-bookmark"></i> Presets</h3>
+                    <h3><i class="fa-solid fa-bookmark"></i> Presets & Tools</h3>
                 </div>
 
                 <div class="preset-tabs">
-                    <button class="tab-btn active"><i class="fa-solid fa-floppy-disk"></i> Presets</button>
-                    <button class="tab-btn"><i class="fa-solid fa-download"></i> Save</button>
-                    <button class="tab-btn"><i class="fa-solid fa-compass"></i> Browse</button>
+                    <button class="tab-btn active" id="tab-presets-btn"><i class="fa-solid fa-palette"></i> Presets</button>
+                    <button class="tab-btn" id="tab-save-btn"><i class="fa-solid fa-floppy-disk"></i> Save JSON</button>
                 </div>
 
-                <p style="font-size:0.8rem; color: var(--text-muted); margin-bottom: 5px;">Import JSON Preset</p>
-                <input type="text" class="json-input" placeholder="Paste a JSON preset here">
+                <!-- TAB 1: PRESET CHIPS -->
+                <div class="preset-view active" id="view-presets">
+                    <div class="preset-chips">
+                        <div class="chip" data-preset="amycps">🍎 AMYCPS (Fruit)</div>
+                        <div class="chip" data-preset="sunset">🌅 Sunset Gold</div>
+                        <div class="chip" data-preset="cyberpunk">🌃 Cyberpunk</div>
+                        <div class="chip" data-preset="ocean">🌊 Deep Ocean</div>
+                        <div class="chip" data-preset="rainbow">🌈 Rainbow</div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: SAVE JSON PRESET -->
+                <div class="preset-view" id="view-save">
+                    <textarea class="output-box" id="json-export-text" style="height: 80px;" readonly></textarea>
+                </div>
+
+                <p style="font-size:0.8rem; color: var(--text-muted); margin-bottom: 5px; margin-top: 10px;">Import JSON Preset</p>
+                <input type="text" class="json-input" id="json-import-input" placeholder="Paste a JSON preset string here...">
 
                 <button class="btn-primary" id="copy-btn"><i class="fa-solid fa-copy"></i> Copy Output</button>
-                <button class="btn-action" style="width: 100%; justify-content: center;"><i class="fa-solid fa-link"></i> Get Shareable URL</button>
+                <button class="btn-action" id="share-btn" style="width: 100%; justify-content: center;"><i class="fa-solid fa-link"></i> Get Shareable URL</button>
             </div>
 
         </div>
 
     </div>
 
+    <!-- TOAST ALERT -->
+    <div class="toast" id="toast-msg">
+        <i class="fa-solid fa-circle-check" style="color: var(--accent-cyan);"></i>
+        <span id="toast-text">Notification text</span>
+    </div>
+
     <!-- FOOTER -->
     <footer>
         <p>DexRGB is a free and open-source Minecraft RGB gradient creator that generates hex-formatted text for servers.</p>
-        <p style="margin-top: 5px;">Customized GUI HUD inspired by modern web tools.</p>
+        <p style="margin-top: 5px;">Customized HUD GUI built for GitHub Pages.</p>
     </footer>
 
     <!-- LOGIC / JAVASCRIPT -->
@@ -540,13 +671,39 @@
         const removeColorBtn = document.getElementById('remove-color-btn');
         const colorCountSpan = document.getElementById('color-count');
         const copyBtn = document.getElementById('copy-btn');
+        const shareBtn = document.getElementById('share-btn');
+        const fontSelect = document.getElementById('font-select');
+        
+        // Advanced Options
+        const btnToggleAdvanced = document.getElementById('btn-toggle-advanced');
+        const advancedDrawer = document.getElementById('advanced-drawer');
+        const uppercaseHex = document.getElementById('uppercase-hex');
+        const trimSpaces = document.getElementById('trim-spaces');
+
+        // Tabs
+        const tabPresetsBtn = document.getElementById('tab-presets-btn');
+        const tabSaveBtn = document.getElementById('tab-save-btn');
+        const viewPresets = document.getElementById('view-presets');
+        const viewSave = document.getElementById('view-save');
+        const jsonImportInput = document.getElementById('json-import-input');
+        const jsonExportText = document.getElementById('json-export-text');
 
         // State variables
-        let colors = ['#54daf4', '#545eb6']; // Default HUD Colors from user screenshot
+        let colors = ['#FF2D55', '#FF9500', '#FFCC00', '#FF6B00', '#FF9E79', '#5856D6']; // AMYCPS Default Palette
         let isBold = false;
         let isItalic = false;
+        let isUnderline = false;
+        let isStrike = false;
 
-        // Toggle Formatting
+        // Toast Helper
+        function showToast(message) {
+            const toast = document.getElementById('toast-msg');
+            document.getElementById('toast-text').innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Toggle Formatting Buttons
         document.getElementById('btn-bold').addEventListener('click', (e) => {
             isBold = !isBold;
             e.currentTarget.classList.toggle('active');
@@ -557,6 +714,25 @@
             isItalic = !isItalic;
             e.currentTarget.classList.toggle('active');
             updateGradient();
+        });
+
+        document.getElementById('btn-underline').addEventListener('click', (e) => {
+            isUnderline = !isUnderline;
+            e.currentTarget.classList.toggle('active');
+            updateGradient();
+        });
+
+        document.getElementById('btn-strike').addEventListener('click', (e) => {
+            isStrike = !isStrike;
+            e.currentTarget.classList.toggle('active');
+            updateGradient();
+        });
+
+        // Font Switcher
+        fontSelect.addEventListener('change', (e) => {
+            previewDisplay.className = 'preview-box';
+            if (e.target.value === 'minecraft') previewDisplay.classList.add('font-minecraft');
+            if (e.target.value === 'code') previewDisplay.classList.add('font-code');
         });
 
         // Color Utilities
@@ -590,33 +766,50 @@
             return interpolateColor(colors[index], colors[index + 1], subFactor);
         }
 
-        // Format Generators
+        // Format Generator
         function formatChar(char, hex, format) {
-            const cleanHex = hex.replace('#', '');
+            if (trimSpaces.checked && char === ' ') return ' ';
+
+            let cleanHex = hex.replace('#', '');
+            if (uppercaseHex.checked) cleanHex = cleanHex.toUpperCase();
+
             let prefix = '';
 
             switch(format) {
                 case 'chat':
                     prefix = `&#${cleanHex}`;
+                    if (isBold) prefix += '&l';
+                    if (isItalic) prefix += '&o';
+                    if (isUnderline) prefix += '&n';
+                    if (isStrike) prefix += '&m';
                     break;
                 case 'legacy':
                     prefix = `&x` + cleanHex.split('').map(c => `&${c}`).join('');
+                    if (isBold) prefix += '&l';
+                    if (isItalic) prefix += '&o';
+                    if (isUnderline) prefix += '&n';
+                    if (isStrike) prefix += '&m';
                     break;
                 case 'minimessage':
                     prefix = `<#${cleanHex}>`;
+                    if (isBold) prefix += '<b>';
+                    if (isItalic) prefix += '<i>';
+                    if (isUnderline) prefix += '<u>';
+                    if (isStrike) prefix += '<st>';
                     break;
                 case 'cmi':
                     prefix = `{#${cleanHex}}`;
+                    if (isBold) prefix += '&l';
+                    if (isItalic) prefix += '&o';
+                    if (isUnderline) prefix += '&n';
+                    if (isStrike) prefix += '&m';
                     break;
             }
-
-            if (isBold) prefix += '&l';
-            if (isItalic) prefix += '&o';
 
             return prefix + char;
         }
 
-        // Render UI Elements
+        // Render Color Pickers
         function renderColorPickers() {
             colorList.innerHTML = '';
             colors.forEach((col, idx) => {
@@ -632,7 +825,6 @@
                 colorList.appendChild(row);
             });
 
-            // Re-attach event listeners
             document.querySelectorAll('.color-picker').forEach(picker => {
                 picker.addEventListener('input', (e) => {
                     const idx = e.target.getAttribute('data-index');
@@ -644,15 +836,17 @@
             colorCountSpan.innerText = colors.length;
         }
 
-        function removeColor(index) {
+        window.removeColor = function(index) {
             if (colors.length > 2) {
                 colors.splice(index, 1);
                 renderColorPickers();
                 updateGradient();
+            } else {
+                showToast("Minimum 2 colors required!");
             }
-        }
+        };
 
-        // Main Update Function
+        // Main Gradient Updater
         function updateGradient() {
             const text = textInput.value || "DexRGB";
             const format = formatSelect.value;
@@ -666,10 +860,13 @@
                 const factor = len > 1 ? i / (len - 1) : 0;
                 const hexColor = getMultiGradientColor(colors, factor);
                 
-                // HTML Preview
+                // Live HTML Preview styling
                 let style = `color: ${hexColor};`;
                 if (isBold) style += 'font-weight: bold;';
                 if (isItalic) style += 'font-style: italic;';
+                if (isUnderline || isStrike) {
+                    style += `text-decoration: ${isUnderline ? 'underline' : ''} ${isStrike ? 'line-through' : ''};`;
+                }
                 
                 previewHTML += `<span style="${style}">${text[i]}</span>`;
 
@@ -680,14 +877,35 @@
             previewDisplay.innerHTML = previewHTML;
             outputText.value = formattedOutput;
 
-            // Update bottom slider bar gradient
+            // Update bottom slider gradient
             gradientBar.style.background = `linear-gradient(90deg, ${colors.join(', ')})`;
+
+            // Update Export JSON tab
+            jsonExportText.value = JSON.stringify({
+                name: "Custom Gradient",
+                text: text,
+                colors: colors
+            }, null, 2);
         }
 
-        // Event Listeners
-        textInput.addEventListener('input', updateGradient);
-        formatSelect.addEventListener('change', updateGradient);
+        // --- BUTTON ACTIONS ---
 
+        // Randomize
+        document.getElementById('btn-randomize').addEventListener('click', () => {
+            colors = colors.map(() => '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0'));
+            renderColorPickers();
+            updateGradient();
+            showToast("Randomized colors!");
+        });
+
+        // Reverse
+        document.getElementById('btn-reverse-colors').addEventListener('click', () => {
+            colors.reverse();
+            renderColorPickers();
+            updateGradient();
+        });
+
+        // Add / Remove Color
         addColorBtn.addEventListener('click', () => {
             colors.push('#ffffff');
             renderColorPickers();
@@ -699,18 +917,133 @@
                 colors.pop();
                 renderColorPickers();
                 updateGradient();
+            } else {
+                showToast("Minimum 2 colors required!");
             }
         });
 
+        // Advanced Options Toggle
+        btnToggleAdvanced.addEventListener('click', () => {
+            advancedDrawer.classList.toggle('active');
+            btnToggleAdvanced.classList.toggle('active');
+        });
+
+        uppercaseHex.addEventListener('change', updateGradient);
+        trimSpaces.addEventListener('change', updateGradient);
+
+        // Decode Button Functionality
+        document.getElementById('btn-decode').addEventListener('click', () => {
+            const raw = outputText.value || textInput.value;
+            const hexMatches = raw.match(/#[a-fA-F0-9]{6}|&x(&[a-fA-F0-9]){6}/g);
+            if (hexMatches && hexMatches.length >= 2) {
+                colors = hexMatches.map(m => {
+                    if (m.startsWith('&x')) {
+                        return '#' + m.replace(/&/g, '').substring(1);
+                    }
+                    return m;
+                });
+                renderColorPickers();
+                updateGradient();
+                showToast("Successfully decoded HEX colors!");
+            } else {
+                showToast("No valid HEX gradient codes found to decode.");
+            }
+        });
+
+        // Tabs
+        tabPresetsBtn.addEventListener('click', () => {
+            tabPresetsBtn.classList.add('active');
+            tabSaveBtn.classList.remove('active');
+            viewPresets.classList.add('active');
+            viewSave.classList.remove('active');
+        });
+
+        tabSaveBtn.addEventListener('click', () => {
+            tabSaveBtn.classList.add('active');
+            tabPresetsBtn.classList.remove('active');
+            viewSave.classList.add('active');
+            viewPresets.classList.remove('active');
+        });
+
+        // Preset Chips Click Handler
+        const presetsMap = {
+            'amycps': ['#FF2D55', '#FF9500', '#FFCC00', '#FF6B00', '#FF9E79', '#5856D6'],
+            'sunset': ['#ff7e5f', '#feb47b'],
+            'cyberpunk': ['#ff007f', '#00f6ff'],
+            'ocean': ['#2b5876', '#4e4376'],
+            'rainbow': ['#ff0000', '#ff7f00', '#ffff00', '#00ff00', '#0000ff', '#8b00ff']
+        };
+
+        document.querySelectorAll('.chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const presetKey = chip.getAttribute('data-preset');
+                if (presetsMap[presetKey]) {
+                    colors = [...presetsMap[presetKey]];
+                    renderColorPickers();
+                    updateGradient();
+                    showToast(`Applied ${chip.innerText} preset!`);
+                }
+            });
+        });
+
+        // JSON Preset Import Handler
+        jsonImportInput.addEventListener('input', (e) => {
+            try {
+                const data = JSON.parse(e.target.value);
+                if (data.colors && Array.isArray(data.colors) && data.colors.length >= 2) {
+                    colors = data.colors;
+                    if (data.text) textInput.value = data.text;
+                    renderColorPickers();
+                    updateGradient();
+                    showToast("JSON Preset loaded successfully!");
+                }
+            } catch(err) {
+                // Ignore while user is typing incomplete JSON
+            }
+        });
+
+        // Copy Output Button
         copyBtn.addEventListener('click', () => {
             outputText.select();
             navigator.clipboard.writeText(outputText.value);
-            const originalText = copyBtn.innerHTML;
-            copyBtn.innerHTML = `<i class="fa-solid fa-check"></i> Copied!`;
-            setTimeout(() => {
-                copyBtn.innerHTML = originalText;
-            }, 2000);
+            showToast("Output copied to clipboard!");
         });
+
+        // Get Shareable URL
+        shareBtn.addEventListener('click', () => {
+            const hashData = btoa(JSON.stringify({
+                text: textInput.value,
+                colors: colors
+            }));
+            const shareableUrl = `${window.location.origin}${window.location.pathname}#${hashData}`;
+            navigator.clipboard.writeText(shareableUrl);
+            showToast("Shareable URL copied to clipboard!");
+        });
+
+        // Load Shareable URL on startup
+        window.addEventListener('load', () => {
+            if (window.location.hash) {
+                try {
+                    const data = JSON.parse(atob(window.location.hash.substring(1)));
+                    if (data.text) textInput.value = data.text;
+                    if (data.colors && Array.isArray(data.colors)) colors = data.colors;
+                    showToast("Loaded gradient from shared URL!");
+                } catch(e) {}
+            }
+        });
+
+        // Interactive Dummy Links
+        document.getElementById('btn-tab-anim').addEventListener('click', () => showToast("TAB Animation generator enabled!"));
+        document.getElementById('btn-login').addEventListener('click', () => showToast("Sign-in system coming soon!"));
+        document.getElementById('nav-docs').addEventListener('click', () => showToast("Opening Documentation..."));
+        document.getElementById('nav-hosting').addEventListener('click', () => showToast("DexRGB Hosting selected."));
+        document.getElementById('nav-resources').addEventListener('click', () => showToast("Resources opened."));
+        document.getElementById('nav-lang').addEventListener('click', () => showToast("Language: English (US)"));
+        document.getElementById('nav-settings').addEventListener('click', () => showToast("Settings menu opened."));
+
+        // Event Listeners
+        textInput.addEventListener('input', updateGradient);
+        formatSelect.addEventListener('change', updateGradient);
 
         // Initialize App
         renderColorPickers();
