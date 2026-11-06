@@ -1,1 +1,757 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050a08">
+  <meta name="description" content="A harmless random place explorer with a neon terminal skin. Pick a destination, open it in Google Maps, and keep a local archive.">
+  <title>Ghost Atlas — Random place explorer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050a08;
+      --panel: #0a120e;
+      --panel-2: #0d1912;
+      --line: rgba(123, 255, 166, .13);
+      --muted: #7c9382;
+      --text: #e6f4e9;
+      --green: #69f79b;
+      --green-2: #a2ffbd;
+      --green-dim: #1d6b3d;
+      --amber: #d9c775;
+      --danger: #ff7474;
+      --mono: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(ellipse at 75% 0%, rgba(18, 91, 48, .16), transparent 38rem),
+        radial-gradient(ellipse at 0% 80%, rgba(8, 66, 38, .12), transparent 34rem),
+        var(--bg);
+      font-family: var(--sans);
+    }
+    body::after {
+      position: fixed;
+      z-index: 9;
+      inset: 0;
+      pointer-events: none;
+      content: "";
+      opacity: .07;
+      background: repeating-linear-gradient(transparent 0 3px, rgba(109, 255, 154, .07) 4px);
+      mix-blend-mode: screen;
+    }
+    button, input { font: inherit; }
+    button { color: inherit; }
+    a { color: inherit; }
+    .shell { display: grid; grid-template-columns: 228px minmax(0, 1fr); min-height: 100vh; }
+    .sidebar {
+      position: sticky;
+      top: 0;
+      display: flex;
+      height: 100vh;
+      flex-direction: column;
+      padding: 25px 16px 18px;
+      border-right: 1px solid var(--line);
+      background: rgba(5, 10, 8, .78);
+    }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 0 9px 28px; }
+    .brand-mark {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border: 1px solid rgba(105, 247, 155, .56);
+      border-radius: 10px;
+      color: var(--green);
+      background: rgba(105, 247, 155, .08);
+      box-shadow: 0 0 24px rgba(105, 247, 155, .11), inset 0 0 12px rgba(105, 247, 155, .07);
+    }
+    .brand-mark svg { width: 19px; height: 19px; }
+    .brand-name { font: 700 13px/1 var(--mono); letter-spacing: .12em; }
+    .brand-sub { margin-top: 5px; color: var(--muted); font: 10px/1 var(--mono); letter-spacing: .09em; }
+    .nav-label, .eyebrow, .micro-label { color: var(--muted); font: 10px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+    .nav-label { padding: 8px 10px 10px; }
+    .nav { display: grid; gap: 5px; }
+    .nav-button {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 11px;
+      padding: 11px 10px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: #9db1a2;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      transition: .18s ease;
+    }
+    .nav-button:hover { color: var(--text); background: rgba(255,255,255,.025); }
+    .nav-button.active { border-color: rgba(105, 247, 155, .16); color: var(--green-2); background: rgba(105, 247, 155, .075); }
+    .nav-icon { display: grid; width: 19px; place-items: center; color: currentColor; font: 15px var(--mono); }
+    .nav-name { flex: 1; font-size: 12px; }
+    .nav-count { color: var(--muted); font: 10px var(--mono); }
+    .sidebar-spacer { flex: 1; }
+    .safe-card { padding: 13px; border: 1px solid var(--line); border-radius: 9px; background: rgba(11, 24, 16, .7); }
+    .safe-top { display: flex; align-items: center; gap: 8px; color: var(--green); font: 10px var(--mono); letter-spacing: .08em; }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
+    .safe-copy { margin-top: 9px; color: #8ba091; font-size: 11px; line-height: 1.55; }
+    .side-footer { padding: 13px 9px 0; color: #516357; font: 9px/1.7 var(--mono); letter-spacing: .04em; }
+    .main { width: min(1460px, 100%); margin: 0 auto; padding: 0 32px 32px; }
+    .topbar { display: flex; min-height: 76px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+    .crumb { color: var(--muted); font: 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+    .crumb b { color: var(--green); font-weight: 500; }
+    .top-right { display: flex; align-items: center; gap: 18px; }
+    .network-pill { display: flex; align-items: center; gap: 7px; padding: 7px 9px; border: 1px solid rgba(105,247,155,.16); border-radius: 99px; color: #a6c6ae; background: rgba(105,247,155,.035); font: 9px var(--mono); letter-spacing: .08em; }
+    .network-pill .status-dot { width: 6px; height: 6px; }
+    .clock { color: var(--muted); font: 10px var(--mono); letter-spacing: .05em; }
+    .page { padding-top: 30px; }
+    [hidden] { display: none !important; }
+    .hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 23px; }
+    .hero-kicker { display: flex; align-items: center; gap: 9px; margin-bottom: 11px; color: var(--green); font: 10px var(--mono); letter-spacing: .15em; text-transform: uppercase; }
+    .hero h1 { margin: 0; font-size: clamp(28px, 3.7vw, 42px); font-weight: 580; letter-spacing: -.045em; line-height: 1.1; }
+    .hero h1 span { color: var(--green); }
+    .hero-copy { max-width: 590px; margin: 11px 0 0; color: #8ea194; font-size: 13px; line-height: 1.65; }
+    .hero-copy strong { color: #c4d5c9; font-weight: 500; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 9px; padding-bottom: 2px; }
+    .button {
+      display: inline-flex;
+      min-height: 41px;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: #c5d7ca;
+      background: #0c1510;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      text-decoration: none;
+      transition: .18s ease;
+    }
+    .button:hover { border-color: rgba(105,247,155,.45); color: #fff; transform: translateY(-1px); }
+    .button.primary { border-color: rgba(105,247,155,.6); color: #051009; background: var(--green); box-shadow: 0 0 22px rgba(105,247,155,.15); }
+    .button.primary:hover { background: var(--green-2); box-shadow: 0 0 30px rgba(105,247,155,.25); }
+    .button .button-icon { font: 15px var(--mono); }
+    .button.small { min-height: 34px; padding: 0 10px; font-size: 10px; }
+    .button.ghost { border-color: transparent; background: transparent; }
+    .button.danger { color: #ee9a9a; }
+    .button:disabled { opacity: .6; cursor: wait; transform: none; }
+    .content-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(280px, .9fr); gap: 14px; }
+    .card { border: 1px solid var(--line); border-radius: 11px; background: linear-gradient(145deg, rgba(12, 22, 16, .96), rgba(7, 13, 10, .96)); box-shadow: 0 14px 55px rgba(0,0,0,.12); }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 17px; border-bottom: 1px solid var(--line); }
+    .card-title { display: flex; align-items: center; gap: 9px; font-size: 11px; font-weight: 600; letter-spacing: .03em; }
+    .card-title .square { width: 7px; height: 7px; border: 1px solid var(--green); background: rgba(105,247,155,.35); box-shadow: 0 0 9px rgba(105,247,155,.55); }
+    .card-status { color: var(--muted); font: 9px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+    .map-wrap { padding: 14px; }
+    .map-stage {
+      position: relative;
+      overflow: hidden;
+      min-height: 355px;
+      border: 1px solid rgba(111, 207, 142, .13);
+      border-radius: 8px;
+      background:
+        linear-gradient(rgba(7, 25, 16, .5), rgba(4, 13, 9, .8)),
+        radial-gradient(ellipse at 50% 50%, rgba(28, 82, 48, .2), transparent 65%),
+        #07100b;
+    }
+    .map-stage::before { position: absolute; inset: 0; content: ""; opacity: .55; background-image: linear-gradient(rgba(105,247,155,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(105,247,155,.055) 1px, transparent 1px); background-size: 36px 36px; mask-image: linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent); }
+    .map-svg { position: absolute; inset: 5% 2%; width: 96%; height: 90%; opacity: .8; }
+    .land { fill: rgba(30, 92, 51, .3); stroke: rgba(105,247,155,.46); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+    .border-line { fill: none; stroke: rgba(105,247,155,.14); stroke-width: 1; stroke-dasharray: 3 5; vector-effect: non-scaling-stroke; }
+    .map-coord { position: absolute; z-index: 2; padding: 6px 8px; border: 1px solid rgba(105,247,155,.18); border-radius: 5px; color: #779183; background: rgba(4,10,7,.72); font: 9px var(--mono); letter-spacing: .04em; }
+    .map-coord.tl { top: 12px; left: 12px; }
+    .map-coord.br { right: 12px; bottom: 12px; }
+    .map-marker { position: absolute; z-index: 3; width: 16px; height: 16px; transform: translate(-50%,-50%); transition: left .45s ease, top .45s ease; }
+    .map-marker::before, .map-marker::after { position: absolute; inset: 0; border: 1px solid var(--green); border-radius: 50%; content: ""; }
+    .map-marker::before { background: rgba(105,247,155,.24); box-shadow: 0 0 22px rgba(105,247,155,.7); }
+    .map-marker::after { animation: ping 1.7s ease-out infinite; }
+    .map-marker i { position: absolute; z-index: 1; top: 5px; left: 5px; width: 6px; height: 6px; border-radius: 50%; background: #e6ffed; box-shadow: 0 0 8px var(--green); }
+    @keyframes ping { 0% { transform: scale(1); opacity: .8; } 100% { transform: scale(3.4); opacity: 0; } }
+    .map-callout { position: absolute; z-index: 3; max-width: 180px; padding: 7px 9px; border: 1px solid rgba(105,247,155,.25); border-radius: 6px; color: #d9fbe2; background: rgba(5,12,8,.9); font: 10px var(--mono); pointer-events: none; transform: translate(13px,-50%); }
+    .map-legend { display: flex; align-items: center; gap: 8px; color: #779183; font: 9px var(--mono); }
+    .legend-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+    .map-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 14px 14px; }
+    .map-footer .micro-label { font-size: 9px; }
+    .details-card { display: flex; flex-direction: column; }
+    .place-body { flex: 1; padding: 18px; }
+    .place-flag { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .location-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 8px; border: 1px solid rgba(105,247,155,.18); border-radius: 5px; color: var(--green-2); background: rgba(105,247,155,.06); font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    .location-badge .status-dot { width: 5px; height: 5px; }
+    .place-number { color: #607366; font: 9px var(--mono); }
+    .place-name { margin: 18px 0 3px; font-size: 25px; font-weight: 580; letter-spacing: -.04em; line-height: 1.1; }
+    .place-subtitle { color: #94aa99; font-size: 12px; }
+    .place-description { margin: 14px 0 0; color: #8ba091; font-size: 11px; line-height: 1.7; }
+    .fact-box { margin-top: 15px; padding: 11px 12px; border-left: 2px solid var(--green-dim); border-radius: 0 6px 6px 0; color: #a5b9a9; background: rgba(105,247,155,.045); font-size: 10px; line-height: 1.6; }
+    .fact-box b { display: block; margin-bottom: 4px; color: var(--green); font: 9px var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 15px; }
+    .detail-cell { min-width: 0; padding: 10px; border: 1px solid rgba(123,255,166,.09); border-radius: 6px; background: rgba(0,0,0,.14); }
+    .detail-cell .micro-label { margin-bottom: 7px; font-size: 8px; }
+    .detail-value { overflow: hidden; color: #d4e3d7; font: 10px var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+    .place-actions { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 18px 18px; }
+    .bottom-grid { display: grid; grid-template-columns: 1fr 1.45fr; gap: 14px; margin-top: 14px; }
+    .telemetry { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; padding: 14px; }
+    .telemetry-cell { padding: 10px; border: 1px solid rgba(123,255,166,.09); border-radius: 6px; background: rgba(0,0,0,.12); }
+    .telemetry-value { margin-top: 8px; color: var(--green-2); font: 12px var(--mono); }
+    .telemetry-note { margin-top: 5px; color: #64766a; font: 8px var(--mono); }
+    .archive-preview-list { display: grid; gap: 0; padding: 3px 15px 10px; }
+    .preview-empty { padding: 16px 2px; color: #778a7d; font-size: 11px; line-height: 1.55; }
+    .preview-row { display: flex; align-items: center; gap: 10px; padding: 10px 1px; border-bottom: 1px solid rgba(123,255,166,.07); cursor: pointer; }
+    .preview-row:last-child { border-bottom: 0; }
+    .preview-pin { display: grid; width: 25px; height: 25px; flex: none; place-items: center; border: 1px solid rgba(105,247,155,.17); border-radius: 6px; color: var(--green); font: 11px var(--mono); background: rgba(105,247,155,.05); }
+    .preview-text { min-width: 0; flex: 1; }
+    .preview-name { overflow: hidden; color: #d4e3d7; font-size: 10px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+    .preview-meta { margin-top: 4px; color: #6c8172; font: 8px var(--mono); }
+    .preview-arrow { color: #668070; font: 12px var(--mono); }
+    .archive-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .archive-heading h2 { margin: 0; font-size: 25px; font-weight: 580; letter-spacing: -.035em; }
+    .archive-heading p { margin: 7px 0 0; color: #84998a; font-size: 11px; }
+    .archive-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+    .search-wrap { position: relative; }
+    .search-wrap span { position: absolute; top: 50%; left: 11px; color: #668070; font: 12px var(--mono); transform: translateY(-50%); }
+    .search-input { width: min(250px, 55vw); height: 35px; padding: 0 12px 0 31px; border: 1px solid var(--line); border-radius: 6px; outline: none; color: var(--text); background: #09110c; font-size: 10px; }
+    .search-input:focus { border-color: rgba(105,247,155,.45); box-shadow: 0 0 0 3px rgba(105,247,155,.06); }
+    .archive-panel { overflow: hidden; }
+    .archive-grid-head { display: grid; grid-template-columns: minmax(160px,1.5fr) minmax(120px,1fr) minmax(125px,1fr) 72px; gap: 14px; padding: 11px 17px; border-bottom: 1px solid var(--line); color: #728778; font: 9px var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+    .archive-list { padding: 2px 12px; }
+    .archive-entry { display: grid; grid-template-columns: minmax(160px,1.5fr) minmax(120px,1fr) minmax(125px,1fr) 72px; align-items: center; gap: 14px; padding: 12px 5px; border-bottom: 1px solid rgba(123,255,166,.075); }
+    .archive-entry:last-child { border-bottom: 0; }
+    .archive-place { display: flex; min-width: 0; align-items: center; gap: 10px; }
+    .archive-place-info { min-width: 0; }
+    .archive-place-name { overflow: hidden; color: #d7e8dc; font-size: 11px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+    .archive-place-sub { overflow: hidden; margin-top: 4px; color: #718477; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+    .archive-mono { color: #93a99a; font: 9px var(--mono); }
+    .archive-actions { display: flex; justify-content: flex-end; gap: 5px; }
+    .icon-button { display: grid; width: 29px; height: 29px; place-items: center; border: 1px solid transparent; border-radius: 5px; color: #829688; background: transparent; cursor: pointer; font: 11px var(--mono); }
+    .icon-button:hover { border-color: var(--line); color: var(--green-2); background: rgba(105,247,155,.05); }
+    .icon-button.delete:hover { color: var(--danger); }
+    .archive-empty { padding: 48px 18px; color: #84998a; text-align: center; }
+    .archive-empty strong { display: block; margin-bottom: 8px; color: #c8d8cc; font-size: 13px; font-weight: 550; }
+    .archive-empty span { font-size: 10px; line-height: 1.6; }
+    .app-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 22px; padding-top: 14px; border-top: 1px solid rgba(123,255,166,.08); color: #586b5e; font: 9px var(--mono); }
+    .app-footer .footer-links { display: flex; flex-wrap: wrap; gap: 14px; }
+    .app-footer a { color: #718678; text-decoration: none; }
+    .app-footer a:hover { color: var(--green); }
+    .toast { position: fixed; z-index: 20; right: 20px; bottom: 20px; max-width: min(360px, calc(100vw - 40px)); padding: 12px 14px; border: 1px solid rgba(105,247,155,.35); border-radius: 8px; color: #dff8e5; background: #0b1710; box-shadow: 0 12px 30px rgba(0,0,0,.38); font-size: 11px; opacity: 0; pointer-events: none; transform: translateY(8px); transition: .2s ease; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .loading-label { animation: blink 1s steps(2,start) infinite; }
+    @keyframes blink { to { opacity: .45; } }
+    @media (max-width: 1100px) {
+      .shell { grid-template-columns: 190px minmax(0,1fr); }
+      .main { padding-right: 22px; padding-left: 22px; }
+      .content-grid { grid-template-columns: minmax(0,1.35fr) minmax(270px,.9fr); }
+      .hero { align-items: flex-start; flex-direction: column; }
+    }
+    @media (max-width: 820px) {
+      .shell { display: block; }
+      .sidebar { position: static; height: auto; flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .brand { padding: 0; }
+      .sidebar .nav-label, .sidebar-spacer, .safe-card, .side-footer { display: none; }
+      .nav { display: flex; gap: 4px; }
+      .nav-button { width: auto; padding: 9px; }
+      .nav-name { display: none; }
+      .nav-icon { width: auto; }
+      .nav-count { margin-left: 2px; }
+      .main { padding: 0 18px 25px; }
+      .content-grid { grid-template-columns: 1fr; }
+      .details-card { min-height: auto; }
+      .bottom-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .sidebar { padding: 10px 12px; }
+      .brand-mark { width: 32px; height: 32px; }
+      .brand-name { font-size: 11px; }
+      .brand-sub { font-size: 8px; }
+      .nav-button { padding: 8px; }
+      .topbar { min-height: 58px; }
+      .network-pill { padding: 6px 7px; font-size: 8px; }
+      .clock { display: none; }
+      .page { padding-top: 23px; }
+      .hero h1 { font-size: 31px; }
+      .hero-copy { font-size: 11px; }
+      .hero-actions { width: 100%; }
+      .hero-actions .button { flex: 1; }
+      .map-stage { min-height: 255px; }
+      .map-callout { max-width: 130px; font-size: 8px; }
+      .map-footer { align-items: flex-start; flex-direction: column; }
+      .archive-grid-head { display: none; }
+      .archive-entry { grid-template-columns: minmax(0,1fr) auto; gap: 6px 10px; padding: 12px 3px; }
+      .archive-place { grid-column: 1; grid-row: 1; }
+      .archive-entry .archive-coords { grid-column: 1; grid-row: 2; padding-left: 36px; }
+      .archive-entry .archive-saved { grid-column: 1; grid-row: 3; padding-left: 36px; }
+      .archive-actions { grid-column: 2; grid-row: 1 / span 3; }
+      .archive-tools { width: 100%; }
+      .search-wrap { flex: 1; }
+      .search-input { width: 100%; }
+      .telemetry { gap: 6px; padding: 10px; }
+      .telemetry-cell { padding: 8px; }
+      .telemetry-value { font-size: 10px; }
+      .detail-grid { gap: 6px; }
+      .place-body { padding: 15px; }
+      .place-actions { padding: 0 15px 15px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Main navigation">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2.8 19 6v5.3c0 4.2-2.8 7.5-7 9.9-4.2-2.4-7-5.7-7-9.9V6l7-3.2Z" stroke="currentColor" stroke-width="1.35"/><path d="M8.2 12.4 10.6 15l5.3-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div><div class="brand-name">GHOST ATLAS</div><div class="brand-sub">SAFE EXPLORER / 01</div></div>
+      </div>
+      <div class="nav-label">Workspace</div>
+      <nav class="nav">
+        <button class="nav-button active" data-view="discover" type="button" aria-current="page"><span class="nav-icon">⌖</span><span class="nav-name">Discover</span></button>
+        <button class="nav-button" data-view="archive" type="button"><span class="nav-icon">▤</span><span class="nav-name">Archive</span><span class="nav-count" id="navCount">0</span></button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="safe-card">
+        <div class="safe-top"><span class="status-dot"></span> SAFE MODE ACTIVE</div>
+        <div class="safe-copy">No real IPs. No device location. Just a random place and a map link.</div>
+      </div>
+      <div class="side-footer">GHOST ATLAS // BUILD 01<br>ALL DROPS STAY IN THIS BROWSER</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="crumb">GHOST ATLAS <span aria-hidden="true">/</span> <b id="crumbPage">DISCOVER</b></div>
+        <div class="top-right">
+          <div class="network-pill"><span class="status-dot"></span> SIMULATION ONLY</div>
+          <div class="clock" id="headerClock">--:--:-- UTC</div>
+        </div>
+      </header>
+
+      <section class="page" id="discoverView">
+        <div class="hero">
+          <div>
+            <div class="hero-kicker"><span class="status-dot"></span> RANDOM IP // SAFE PLACE DROP</div>
+            <h1>Go somewhere.<br><span>Anywhere.</span></h1>
+            <p class="hero-copy"><strong>Random IP</strong> is a playful place explorer, not an IP tracker. Roll a destination, get a few details, open its coordinates in Google Maps, and keep the drop in your local archive.</p>
+          </div>
+          <div class="hero-actions">
+            <button class="button primary" id="randomButton" type="button"><span class="button-icon">↻</span> RANDOM IP <span class="micro-label" style="color:rgba(5,16,9,.65)">[ R ]</span></button>
+            <button class="button" id="archiveButton" type="button"><span class="button-icon">▤</span> VIEW ARCHIVE</button>
+          </div>
+        </div>
+
+        <div class="content-grid">
+          <section class="card" aria-label="World map preview">
+            <div class="card-head">
+              <div class="card-title"><span class="square"></span> GLOBAL DROP MAP</div>
+              <div class="map-legend"><span class="legend-dot"></span><span id="mapStatus">PREVIEW NODE</span></div>
+            </div>
+            <div class="map-wrap">
+              <div class="map-stage" id="mapStage">
+                <div class="map-coord tl" id="mapCoords">LAT 00.0000 / LON 00.0000</div>
+                <div class="map-coord br">WORLD GRID // NOT TO SCALE</div>
+                <svg class="map-svg" viewBox="0 0 1000 500" preserveAspectRatio="none" aria-hidden="true">
+                  <path class="land" d="M95 104 133 74 184 68 210 82 244 73 269 91 288 116 274 139 288 159 270 180 258 208 237 221 225 247 204 243 187 226 167 223 158 203 140 197 126 175 105 168 91 145 78 132Z"/>
+                  <path class="land" d="M254 242 274 231 293 240 304 263 315 283 315 311 329 335 325 365 310 390 306 416 286 445 275 422 271 396 256 370 248 341 236 317 236 292 225 270Z"/>
+                  <path class="land" d="M300 34 337 19 372 31 386 54 376 78 352 88 332 76 313 70Z"/>
+                  <path class="land" d="M449 116 470 99 491 103 501 123 489 139 472 142 461 133Z"/>
+                  <path class="land" d="M465 146 487 133 515 140 535 161 540 190 528 215 520 246 504 271 492 300 477 329 461 316 458 287 445 257 450 229 438 202 443 176Z"/>
+                  <path class="land" d="M496 103 523 86 556 88 580 71 619 77 644 69 679 82 701 79 731 94 757 92 783 111 817 109 842 129 863 147 851 168 829 176 807 169 791 182 770 174 753 193 730 187 712 204 682 197 664 212 638 199 615 204 590 187 566 193 549 174 531 163 520 141Z"/>
+                  <path class="land" d="M744 218 768 204 796 211 821 230 835 256 821 278 798 285 779 269 760 263 744 242Z"/>
+                  <path class="land" d="M779 327 806 310 837 313 860 331 880 347 867 369 842 381 817 374 795 358Z"/>
+                  <path class="land" d="M877 280 893 272 907 285 905 305 891 311 880 300Z"/>
+                  <path class="border-line" d="M110 151 158 143 198 150 250 137M142 190 187 178 233 186M270 271 291 295 300 334M467 176 492 180 518 168M472 221 500 228 528 217M486 274 510 280M550 119 563 154 560 179M621 98 625 139 620 176M681 103 686 146 680 182M744 119 745 155 727 183"/>
+                  <path d="M30 250H970M500 20V480" stroke="rgba(105,247,155,.09)" stroke-dasharray="2 7"/>
+                </svg>
+                <div class="map-marker" id="mapMarker" hidden><i></i></div>
+                <div class="map-callout" id="mapCallout" hidden></div>
+              </div>
+            </div>
+            <div class="map-footer">
+              <span class="micro-label" id="mapHint">A sample pin is shown. Hit RANDOM IP to roll and archive a place.</span>
+              <a class="button small" id="googleMapsButton" href="https://www.google.com/maps/search/?api=1&query=35.0116%2C135.7681" target="_blank" rel="noopener noreferrer"><span class="button-icon">↗</span> OPEN IN GOOGLE MAPS</a>
+            </div>
+          </section>
+
+          <section class="card details-card" aria-live="polite" aria-label="Selected location details">
+            <div class="card-head">
+              <div class="card-title"><span class="square"></span> DROP INTEL</div>
+              <div class="card-status" id="recordStatus">SAMPLE / NOT SAVED</div>
+            </div>
+            <div class="place-body">
+              <div class="place-flag">
+                <div class="location-badge"><span class="status-dot"></span><span id="placeCategory">CULTURE NODE</span></div>
+                <div class="place-number" id="placeNumber">NODE —</div>
+              </div>
+              <h2 class="place-name" id="placeName">Kyoto</h2>
+              <div class="place-subtitle" id="placeSubtitle">Japan · East Asia</div>
+              <p class="place-description" id="placeDescription">A former imperial capital where quiet shrine paths, timber lanes, and busy city streets sit side by side.</p>
+              <div class="fact-box"><b>FIELD NOTE</b><span id="placeFact">Kyoto was Japan’s capital for more than a thousand years, from 794 until the capital moved to Tokyo in 1868.</span></div>
+              <div class="detail-grid">
+                <div class="detail-cell"><div class="micro-label">COORDINATES</div><div class="detail-value" id="placeCoordinates">35.0116, 135.7681</div></div>
+                <div class="detail-cell"><div class="micro-label">LOCAL TIME</div><div class="detail-value" id="placeLocalTime">--:--</div></div>
+                <div class="detail-cell"><div class="micro-label">REGION</div><div class="detail-value" id="placeRegion">Kyoto Prefecture</div></div>
+                <div class="detail-cell"><div class="micro-label">ELEVATION</div><div class="detail-value" id="placeElevation">56 m</div></div>
+              </div>
+            </div>
+            <div class="place-actions">
+              <button class="button small" id="copyCoords" type="button">⌘ COPY COORDS</button>
+              <button class="button small" id="shareButton" type="button">↗ SHARE DROP</button>
+            </div>
+          </section>
+        </div>
+
+        <div class="bottom-grid">
+          <section class="card">
+            <div class="card-head"><div class="card-title"><span class="square"></span> SIMULATED TELEMETRY</div><div class="card-status">FAKE // SAFE</div></div>
+            <div class="telemetry">
+              <div class="telemetry-cell"><div class="micro-label">TRACE MODE</div><div class="telemetry-value">OFFLINE</div><div class="telemetry-note">NO REAL IP LOOKUP</div></div>
+              <div class="telemetry-cell"><div class="micro-label">LOCATION SOURCE</div><div class="telemetry-value">ATLAS LIST</div><div class="telemetry-note">CURATED PLACE PICKS</div></div>
+              <div class="telemetry-cell"><div class="micro-label">ARCHIVE</div><div class="telemetry-value" id="savedTotal">0 DROPS</div><div class="telemetry-note">SAVED IN THIS BROWSER</div></div>
+            </div>
+          </section>
+          <section class="card">
+            <div class="card-head"><div class="card-title"><span class="square"></span> RECENTLY ARCHIVED</div><button class="button small ghost" id="openAllArchive" type="button">OPEN ARCHIVE →</button></div>
+            <div class="archive-preview-list" id="recentList"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="page" id="archiveView" hidden>
+        <div class="archive-toolbar">
+          <div class="archive-heading"><div class="hero-kicker"><span class="status-dot"></span> LOCAL STORAGE // YOUR DROPS</div><h2>Place archive</h2><p>Every generated drop is saved in this browser. Export a JSON copy to carry it elsewhere.</p></div>
+          <div class="archive-tools">
+            <label class="search-wrap"><span>⌕</span><input class="search-input" id="archiveSearch" type="search" placeholder="Search places or countries" aria-label="Search archived places"></label>
+            <button class="button small" id="exportButton" type="button">↓ EXPORT JSON</button>
+            <button class="button small danger" id="clearButton" type="button">CLEAR</button>
+          </div>
+        </div>
+        <section class="card archive-panel" aria-label="Archived places">
+          <div class="archive-grid-head"><span>PLACE</span><span>COORDINATES</span><span>ARCHIVED</span><span style="text-align:right">ACTIONS</span></div>
+          <div class="archive-list" id="archiveList"></div>
+        </section>
+      </section>
+
+      <footer class="app-footer">
+        <span>GHOST ATLAS // NO REAL IP ADDRESS OR DEVICE LOCATION IS USED</span>
+        <div class="footer-links"><a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer">GOOGLE MAPS</a><a href="https://github.com/Dexntzxxxx/dexrgb" target="_blank" rel="noopener noreferrer">SOURCE</a></div>
+      </footer>
+    </main>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const LOCATIONS = [
+      {id:"tromso",name:"Tromsø",country:"Norway",region:"Troms",continent:"Europe",category:"Arctic city",lat:69.6492,lon:18.9553,timezone:"Europe/Oslo",elevation:"10 m",description:"A compact Arctic city ringed by fjords and steep peaks, known for long summer light and winter aurora skies.",fact:"Tromsø lies well north of the Arctic Circle and is a gateway to the surrounding fjords and islands."},
+      {id:"ilulissat",name:"Ilulissat",country:"Greenland",region:"Avannaata",continent:"North America",category:"Icefjord town",lat:69.2198,lon:-51.0986,timezone:"America/Nuuk",elevation:"20 m",description:"A small west Greenland town overlooking Disko Bay, where icebergs drift out from the Ilulissat Icefjord.",fact:"The Ilulissat Icefjord is a UNESCO World Heritage Site and one of the world’s most productive glaciers."},
+      {id:"reykjavik",name:"Reykjavík",country:"Iceland",region:"Capital Region",continent:"Europe",category:"Coastal city",lat:64.1466,lon:-21.9426,timezone:"Atlantic/Reykjavik",elevation:"14 m",description:"Iceland’s coastal capital, a northern city of colorful roofs, geothermal pools, and a wide view toward the bay.",fact:"The city’s name means “smoky bay,” a reference to steam rising from nearby hot springs."},
+      {id:"hallstatt",name:"Hallstatt",country:"Austria",region:"Upper Austria",continent:"Europe",category:"Alpine village",lat:47.5615,lon:13.6493,timezone:"Europe/Vienna",elevation:"511 m",description:"A lakeside village in the Salzkammergut, tucked between steep forested slopes and the Hallstätter See.",fact:"The region is associated with prehistoric salt mining and gave its name to the Hallstatt culture."},
+      {id:"sintra",name:"Sintra",country:"Portugal",region:"Lisbon District",continent:"Europe",category:"Mountain town",lat:38.8029,lon:-9.3817,timezone:"Europe/Lisbon",elevation:"175 m",description:"A green, mist-prone hill town west of Lisbon, filled with palaces, gardens, and winding lanes.",fact:"The cultural landscape of Sintra is recognized as a UNESCO World Heritage Site."},
+      {id:"meteora",name:"Meteora",country:"Greece",region:"Thessaly",continent:"Europe",category:"Rock monasteries",lat:39.7217,lon:21.6306,timezone:"Europe/Athens",elevation:"400 m",description:"A field of towering sandstone pillars above the Thessalian plain, topped by historic monasteries.",fact:"Six active monasteries remain open to visitors among the famous rock formations."},
+      {id:"cappadocia",name:"Göreme",country:"Türkiye",region:"Nevşehir",continent:"Asia",category:"Rock valley",lat:38.6431,lon:34.8287,timezone:"Europe/Istanbul",elevation:"1,100 m",description:"A town among Cappadocia’s sculpted volcanic valleys, cave dwellings, and stone-cut churches.",fact:"Göreme National Park and the Rock Sites of Cappadocia are listed together as a UNESCO World Heritage Site."},
+      {id:"chefchaouen",name:"Chefchaouen",country:"Morocco",region:"Tangier-Tetouan-Al Hoceima",continent:"Africa",category:"Mountain medina",lat:35.1688,lon:-5.2636,timezone:"Africa/Casablanca",elevation:"600 m",description:"A hillside town in the Rif Mountains known for its blue-painted lanes and quiet medina.",fact:"Chefchaouen was founded in 1471 as a small fortress settlement in the Rif region."},
+      {id:"wadi-rum",name:"Wadi Rum",country:"Jordan",region:"Aqaba Governorate",continent:"Asia",category:"Desert landscape",lat:29.5773,lon:35.4194,timezone:"Asia/Amman",elevation:"900 m",description:"A broad desert valley of red sand, sandstone cliffs, and dramatic rock bridges in southern Jordan.",fact:"Wadi Rum Protected Area is a UNESCO World Heritage Site for both its natural and cultural value."},
+      {id:"petra",name:"Petra",country:"Jordan",region:"Ma'an Governorate",continent:"Asia",category:"Ancient city",lat:30.3285,lon:35.4444,timezone:"Asia/Amman",elevation:"810 m",description:"An archaeological city set among rose-colored cliffs, reached through a narrow sandstone gorge.",fact:"Petra was the capital of the Nabataean kingdom and is famous for buildings carved directly into rock."},
+      {id:"lalibela",name:"Lalibela",country:"Ethiopia",region:"Amhara",continent:"Africa",category:"Rock-cut churches",lat:12.0319,lon:39.0476,timezone:"Africa/Addis_Ababa",elevation:"2,500 m",description:"A highland town whose medieval churches were carved downward into solid volcanic rock.",fact:"The eleven medieval rock-hewn churches of Lalibela are recognized as a UNESCO World Heritage Site."},
+      {id:"zanzibar",name:"Stone Town",country:"Tanzania",region:"Zanzibar Urban/West",continent:"Africa",category:"Historic port",lat:-6.1659,lon:39.2026,timezone:"Africa/Dar_es_Salaam",elevation:"5 m",description:"A dense coastal quarter on Unguja Island, shaped by centuries of Indian Ocean trade and migration.",fact:"Stone Town’s architecture reflects Swahili, Arab, Persian, Indian, and European influences."},
+      {id:"cape-town",name:"Cape Town",country:"South Africa",region:"Western Cape",continent:"Africa",category:"Coastal city",lat:-33.9249,lon:18.4241,timezone:"Africa/Johannesburg",elevation:"25 m",description:"A harbor city below Table Mountain, with beaches, historic neighborhoods, and a dramatic meeting of land and sea.",fact:"Table Mountain National Park protects a large part of the Cape Peninsula’s mountain landscape."},
+      {id:"maasai-mara",name:"Maasai Mara",country:"Kenya",region:"Narok County",continent:"Africa",category:"Savanna reserve",lat:-1.4061,lon:35.0084,timezone:"Africa/Nairobi",elevation:"1,600 m",description:"A broad grassland reserve in southwest Kenya, known for open plains and seasonal wildlife movement.",fact:"The reserve is part of the Mara-Serengeti ecosystem, which spans the Kenya–Tanzania border."},
+      {id:"djenne",name:"Djenné",country:"Mali",region:"Mopti Region",continent:"Africa",category:"River town",lat:13.9061,lon:-4.5547,timezone:"Africa/Bamako",elevation:"278 m",description:"A historic town on the inland Niger delta, known for earthen architecture and a lively market square.",fact:"The Great Mosque of Djenné is one of the best-known examples of Sudano-Sahelian mudbrick architecture."},
+      {id:"samarkand",name:"Samarkand",country:"Uzbekistan",region:"Samarkand Region",continent:"Asia",category:"Silk Road city",lat:39.6542,lon:66.9597,timezone:"Asia/Samarkand",elevation:"705 m",description:"A historic crossroads of Central Asia, with blue-tiled monuments along old Silk Road routes.",fact:"Samarkand’s Registan square is surrounded by three monumental madrasas built between the 15th and 17th centuries."},
+      {id:"baku",name:"Baku",country:"Azerbaijan",region:"Absheron",continent:"Asia",category:"Caspian city",lat:40.4093,lon:49.8671,timezone:"Asia/Baku",elevation:"-28 m",description:"A Caspian Sea port where a medieval walled core sits beside modern towers and the windswept boulevard.",fact:"Baku is one of the world’s lowest-lying national capitals, located below sea level on the Caspian shore."},
+      {id:"kyoto",name:"Kyoto",country:"Japan",region:"Kyoto Prefecture",continent:"Asia",category:"Culture node",lat:35.0116,lon:135.7681,timezone:"Asia/Tokyo",elevation:"56 m",description:"A former imperial capital where quiet shrine paths, timber lanes, and busy city streets sit side by side.",fact:"Kyoto served as Japan’s capital for more than a thousand years, from 794 until the capital moved to Tokyo in 1868."},
+      {id:"takayama",name:"Takayama",country:"Japan",region:"Gifu Prefecture",continent:"Asia",category:"Mountain town",lat:36.1461,lon:137.2522,timezone:"Asia/Tokyo",elevation:"573 m",description:"A mountain city in the Hida region, with preserved merchant streets and nearby alpine scenery.",fact:"Takayama’s old town retains many Edo-period wooden merchant houses."},
+      {id:"luang-prabang",name:"Luang Prabang",country:"Laos",region:"Luang Prabang Province",continent:"Asia",category:"River heritage",lat:19.8856,lon:102.1347,timezone:"Asia/Vientiane",elevation:"305 m",description:"A peninsula town between the Mekong and Nam Khan rivers, with temples and French-era architecture.",fact:"The historic town of Luang Prabang is a UNESCO World Heritage Site."},
+      {id:"hoi-an",name:"Hội An",country:"Vietnam",region:"Quảng Nam",continent:"Asia",category:"Old trading port",lat:15.8801,lon:108.338,timezone:"Asia/Ho_Chi_Minh",elevation:"5 m",description:"A riverside town whose old streets preserve a mix of Vietnamese, Chinese, and Japanese trading-era buildings.",fact:"Hội An was an important international trading port from the 15th through the 19th centuries."},
+      {id:"ubud",name:"Ubud",country:"Indonesia",region:"Bali",continent:"Asia",category:"Island town",lat:-8.5069,lon:115.2625,timezone:"Asia/Makassar",elevation:"200 m",description:"An inland Balinese town among rice terraces, temples, and river valleys, away from the island’s southern coast.",fact:"The Subak irrigation system around Bali is recognized by UNESCO as a cultural landscape."},
+      {id:"raja-ampat",name:"Raja Ampat",country:"Indonesia",region:"Southwest Papua",continent:"Asia",category:"Island archipelago",lat:-0.2333,lon:130.5167,timezone:"Asia/Jayapura",elevation:"0 m",description:"A remote archipelago of forested islands, coral reefs, and clear lagoons off the northwest tip of New Guinea.",fact:"Raja Ampat is part of the Coral Triangle, one of the world’s richest marine biodiversity regions."},
+      {id:"leh",name:"Leh",country:"India",region:"Ladakh",continent:"Asia",category:"High-altitude town",lat:34.1526,lon:77.5771,timezone:"Asia/Kolkata",elevation:"3,500 m",description:"A Himalayan town on an old trade route, set among stark mountains and dry high-altitude valleys.",fact:"Leh sits at roughly 3,500 meters above sea level in the Trans-Himalayan region of Ladakh."},
+      {id:"varanasi",name:"Varanasi",country:"India",region:"Uttar Pradesh",continent:"Asia",category:"River city",lat:25.3176,lon:82.9739,timezone:"Asia/Kolkata",elevation:"80 m",description:"A densely layered city on the Ganges, with stepped ghats, narrow lanes, and a long history as a cultural center.",fact:"Varanasi is among the world’s oldest continuously inhabited cities."},
+      {id:"kathmandu",name:"Kathmandu",country:"Nepal",region:"Bagmati Province",continent:"Asia",category:"Valley capital",lat:27.7172,lon:85.324,timezone:"Asia/Kathmandu",elevation:"1,400 m",description:"Nepal’s valley capital, surrounded by hills and filled with temples, courtyards, and traditional squares.",fact:"The Kathmandu Valley contains seven monument zones recognized together as a UNESCO World Heritage Site."},
+      {id:"tbilisi",name:"Tbilisi",country:"Georgia",region:"Tbilisi",continent:"Asia",category:"Old town",lat:41.7151,lon:44.8271,timezone:"Asia/Tbilisi",elevation:"450 m",description:"A river city in the Caucasus, known for hillside balconies, sulfur baths, and layered architecture.",fact:"The name Tbilisi is linked to the area’s warm sulfur springs."},
+      {id:"new-orleans",name:"New Orleans",country:"United States",region:"Louisiana",continent:"North America",category:"Music city",lat:29.9511,lon:-90.0715,timezone:"America/Chicago",elevation:"-2 m",description:"A Mississippi River city with a distinctive mix of Creole culture, live music, and historic neighborhoods.",fact:"New Orleans is widely associated with the early development of jazz."},
+      {id:"oaxaca",name:"Oaxaca de Juárez",country:"Mexico",region:"Oaxaca",continent:"North America",category:"Market city",lat:17.0732,lon:-96.7266,timezone:"America/Mexico_City",elevation:"1,550 m",description:"A highland city known for its market culture, colorful architecture, and nearby Zapotec archaeological sites.",fact:"The historic center of Oaxaca and the nearby archaeological site of Monte Albán are listed together by UNESCO."},
+      {id:"antigua",name:"Antigua Guatemala",country:"Guatemala",region:"Sacatepéquez",continent:"North America",category:"Colonial city",lat:14.5586,lon:-90.7295,timezone:"America/Guatemala",elevation:"1,530 m",description:"A cobbled former capital framed by volcanoes, with pastel facades and centuries-old stone ruins.",fact:"Antigua was founded in 1543 and is recognized as a UNESCO World Heritage Site."},
+      {id:"banff",name:"Banff",country:"Canada",region:"Alberta",continent:"North America",category:"Mountain park",lat:51.1784,lon:-115.5708,timezone:"America/Edmonton",elevation:"1,383 m",description:"A mountain town in the Canadian Rockies, surrounded by conifer forests, glacial lakes, and high peaks.",fact:"Banff National Park, established in 1885, was Canada’s first national park."},
+      {id:"galapagos",name:"Puerto Ayora",country:"Ecuador",region:"Galápagos Islands",continent:"South America",category:"Island outpost",lat:-0.9538,lon:-90.9656,timezone:"Pacific/Galapagos",elevation:"5 m",description:"The main town on Santa Cruz Island, a base for exploring the volcanic Galápagos archipelago.",fact:"The Galápagos Islands are a UNESCO World Heritage Site and a province of Ecuador."},
+      {id:"cusco",name:"Cusco",country:"Peru",region:"Cusco Region",continent:"South America",category:"Andean city",lat:-13.532,lon:-71.9675,timezone:"America/Lima",elevation:"3,400 m",description:"A high Andean city where Inca stonework and Spanish colonial architecture share the same streets.",fact:"Cusco was the historic capital of the Inca Empire and is a gateway to the Sacred Valley."},
+      {id:"uyuni",name:"Uyuni",country:"Bolivia",region:"Potosí Department",continent:"South America",category:"Salt-flat gateway",lat:-20.4607,lon:-66.8253,timezone:"America/La_Paz",elevation:"3,670 m",description:"A high-altitude rail town on the edge of the Salar de Uyuni, a vast salt flat in southwest Bolivia.",fact:"Salar de Uyuni is the world’s largest salt flat, spanning more than 10,000 square kilometers."},
+      {id:"valparaiso",name:"Valparaíso",country:"Chile",region:"Valparaíso Region",continent:"South America",category:"Hilltop port",lat:-33.0472,lon:-71.6127,timezone:"America/Santiago",elevation:"20 m",description:"A Pacific port city of steep hills, funicular lifts, painted stairways, and a maze of hillside streets.",fact:"Valparaíso’s historic quarter is a UNESCO World Heritage Site."},
+      {id:"buenos-aires",name:"Buenos Aires",country:"Argentina",region:"Autonomous City of Buenos Aires",continent:"South America",category:"River metropolis",lat:-34.6037,lon:-58.3816,timezone:"America/Argentina/Buenos_Aires",elevation:"25 m",description:"A broad Río de la Plata metropolis with leafy avenues, late-night cafés, and distinct neighborhood identities.",fact:"Buenos Aires is often called the birthplace of tango, which grew from the city’s port neighborhoods."},
+      {id:"patagonia",name:"El Calafate",country:"Argentina",region:"Santa Cruz",continent:"South America",category:"Glacier gateway",lat:-50.3387,lon:-72.2648,timezone:"America/Argentina/Rio_Gallegos",elevation:"200 m",description:"A Patagonian town near the shore of Lago Argentino and the immense ice fields of Los Glaciares National Park.",fact:"Perito Moreno Glacier is one of the few major glaciers in the world that is not currently retreating."},
+      {id:"bora-bora",name:"Bora Bora",country:"French Polynesia",region:"Leeward Islands",continent:"Oceania",category:"Lagoon island",lat:-16.5,lon:-151.74,timezone:"Pacific/Tahiti",elevation:"0 m",description:"A volcanic island in the South Pacific, ringed by a reef and a bright lagoon.",fact:"Mount Otemanu, the island’s highest peak, rises from the remains of an extinct volcano."},
+      {id:"rarotonga",name:"Rarotonga",country:"Cook Islands",region:"Southern Cook Islands",continent:"Oceania",category:"Pacific island",lat:-21.2078,lon:-159.7751,timezone:"Pacific/Rarotonga",elevation:"0 m",description:"The largest Cook Island, with a volcanic interior of steep green peaks and a road that loops around the coast.",fact:"Rarotonga is the political and population center of the Cook Islands."},
+      {id:"sydney",name:"Sydney",country:"Australia",region:"New South Wales",continent:"Oceania",category:"Harbor city",lat:-33.8688,lon:151.2093,timezone:"Australia/Sydney",elevation:"58 m",description:"Australia’s largest city, built around a deep natural harbor and connected by ferries, bridges, and coastal walks.",fact:"The Sydney Opera House is a UNESCO World Heritage Site and one of the most recognizable buildings in the world."},
+      {id:"hobart",name:"Hobart",country:"Australia",region:"Tasmania",continent:"Oceania",category:"Island capital",lat:-42.8821,lon:147.3272,timezone:"Australia/Hobart",elevation:"19 m",description:"Tasmania’s compact harbor capital, set below kunanyi / Mount Wellington at the mouth of the Derwent River.",fact:"Hobart is Australia’s second-oldest capital city after Sydney."},
+      {id:"mcmurdo",name:"McMurdo Station",country:"Antarctica",region:"Ross Island",continent:"Antarctica",category:"Research outpost",lat:-77.8419,lon:166.6863,timezone:"Antarctica/McMurdo",elevation:"10 m",description:"A research station on Ross Island, surrounded by ice, volcanic rock, and the Southern Ocean.",fact:"McMurdo is the largest research station in Antarctica and operates as a logistics hub for the continent."}
+    ];
+
+    const STORAGE_KEY = "ghost-atlas.archive.v1";
+    const $ = (selector) => document.querySelector(selector);
+    const byId = new Map(LOCATIONS.map((place) => [place.id, place]));
+    let archive = loadArchive();
+    let currentPlace = byId.get("kyoto");
+    let activeRecordId = null;
+    let toastTimer = null;
+
+    function loadArchive() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+        return Array.isArray(saved) ? saved.filter((record) => record && byIdSafe(record.placeId) && record.id) : [];
+      } catch (_) { return []; }
+    }
+    function byIdSafe(id) { return LOCATIONS.find((place) => place.id === id); }
+    function persistArchive() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(archive)); }
+      catch (_) { showToast("Browser storage is unavailable. Export the archive to keep a copy."); }
+    }
+    function pad(value) { return String(value).padStart(2, "0"); }
+    function formatCoords(place) { return place.lat.toFixed(4) + ", " + place.lon.toFixed(4); }
+    function formatDate(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "Unknown time";
+      return new Intl.DateTimeFormat(undefined, {month:"short",day:"numeric",year:"numeric",hour:"2-digit",minute:"2-digit"}).format(date);
+    }
+    function placeTime(place) {
+      try { return new Intl.DateTimeFormat(undefined, {timeZone:place.timezone,hour:"2-digit",minute:"2-digit",timeZoneName:"short"}).format(new Date()); }
+      catch (_) { return "Time unavailable"; }
+    }
+    function googleMapsUrl(place) {
+      return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place.lat + "," + place.lon);
+    }
+    function showToast(message) {
+      const toast = $("#toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+    }
+    function renderPlace(place, options = {}) {
+      currentPlace = place;
+      activeRecordId = options.recordId || null;
+      $("#placeCategory").textContent = place.category.toUpperCase();
+      $("#placeName").textContent = place.name;
+      $("#placeSubtitle").textContent = place.country + " · " + place.continent;
+      $("#placeDescription").textContent = place.description;
+      $("#placeFact").textContent = place.fact;
+      $("#placeCoordinates").textContent = formatCoords(place);
+      $("#placeLocalTime").textContent = placeTime(place);
+      $("#placeRegion").textContent = place.region;
+      $("#placeElevation").textContent = place.elevation;
+      $("#placeNumber").textContent = "NODE " + String(LOCATIONS.indexOf(place) + 1).padStart(2, "0");
+      $("#recordStatus").textContent = activeRecordId ? "ARCHIVED / SAVED" : "SAMPLE / NOT SAVED";
+      $("#mapCoords").textContent = "LAT " + place.lat.toFixed(4) + " / LON " + place.lon.toFixed(4);
+      $("#mapStatus").textContent = activeRecordId ? "ARCHIVED NODE" : "PREVIEW NODE";
+      $("#mapHint").textContent = activeRecordId ? "This drop is archived in this browser. Share it or open the coordinates in Google Maps." : "Sample pin only. Hit RANDOM IP to roll and archive a place.";
+      $("#googleMapsButton").href = googleMapsUrl(place);
+      const marker = $("#mapMarker");
+      const x = Math.max(2, Math.min(98, ((place.lon + 180) / 360) * 100));
+      const y = Math.max(4, Math.min(96, ((90 - place.lat) / 180) * 100));
+      marker.style.left = x + "%";
+      marker.style.top = y + "%";
+      marker.hidden = false;
+      const callout = $("#mapCallout");
+      callout.textContent = place.name + " // " + place.country;
+      callout.style.left = x + "%";
+      callout.style.top = y + "%";
+      callout.hidden = false;
+      document.title = place.name + " — Ghost Atlas";
+    }
+    function renderCounts() {
+      const count = archive.length;
+      $("#navCount").textContent = count;
+      $("#savedTotal").textContent = count + (count === 1 ? " DROP" : " DROPS");
+    }
+    function createRecord(place) {
+      const record = {id: (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)), placeId:place.id, savedAt:new Date().toISOString()};
+      archive.unshift(record);
+      if (archive.length > 500) archive = archive.slice(0, 500);
+      persistArchive();
+      renderCounts();
+      renderArchive();
+      renderRecent();
+      return record;
+    }
+    function randomPlace() {
+      let place = currentPlace;
+      if (LOCATIONS.length > 1) {
+        while (place === currentPlace) place = LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)];
+      }
+      return place;
+    }
+    function generateDrop() {
+      const button = $("#randomButton");
+      if (button.disabled) return;
+      button.disabled = true;
+      button.innerHTML = '<span class="button-icon loading-label">↻</span> FINDING A PLACE…';
+      const place = randomPlace();
+      window.setTimeout(() => {
+        const record = createRecord(place);
+        renderPlace(place, {recordId:record.id});
+        button.disabled = false;
+        button.innerHTML = '<span class="button-icon">↻</span> RANDOM IP <span class="micro-label" style="color:rgba(5,16,9,.65)">[ R ]</span>';
+        showToast(place.name + ", " + place.country + " saved to your local archive.");
+      }, 280);
+    }
+    function renderRecent() {
+      const host = $("#recentList");
+      host.replaceChildren();
+      if (!archive.length) {
+        const empty = document.createElement("div");
+        empty.className = "preview-empty";
+        empty.textContent = "No drops yet. Roll a random place and it will appear here.";
+        host.append(empty);
+        return;
+      }
+      archive.slice(0, 3).forEach((record) => {
+        const place = byIdSafe(record.placeId);
+        if (!place) return;
+        const row = document.createElement("div");
+        row.className = "preview-row";
+        row.tabIndex = 0;
+        row.setAttribute("role", "button");
+        row.setAttribute("aria-label", "Open " + place.name + " in the current view");
+        const pin = document.createElement("span"); pin.className = "preview-pin"; pin.textContent = "⌖";
+        const text = document.createElement("div"); text.className = "preview-text";
+        const name = document.createElement("div"); name.className = "preview-name"; name.textContent = place.name + " · " + place.country;
+        const meta = document.createElement("div"); meta.className = "preview-meta"; meta.textContent = formatDate(record.savedAt);
+        text.append(name, meta);
+        const arrow = document.createElement("span"); arrow.className = "preview-arrow"; arrow.textContent = "↗";
+        row.append(pin, text, arrow);
+        row.addEventListener("click", () => { showView("discover"); renderPlace(place, {recordId:record.id}); });
+        row.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); row.click(); } });
+        host.append(row);
+      });
+    }
+    function renderArchive() {
+      const host = $("#archiveList");
+      if (!host) return;
+      const query = ($("#archiveSearch")?.value || "").trim().toLowerCase();
+      const matches = archive.filter((record) => {
+        const place = byIdSafe(record.placeId);
+        return place && (!query || [place.name, place.country, place.region, place.continent, place.category].some((value) => value.toLowerCase().includes(query)));
+      });
+      host.replaceChildren();
+      if (!matches.length) {
+        const empty = document.createElement("div"); empty.className = "archive-empty";
+        const title = document.createElement("strong"); title.textContent = archive.length ? "No matching places" : "Your archive is empty";
+        const text = document.createElement("span"); text.textContent = archive.length ? "Try a different search." : "Generate a RANDOM IP drop and it will be saved here automatically.";
+        empty.append(title, text); host.append(empty); return;
+      }
+      matches.forEach((record) => {
+        const place = byIdSafe(record.placeId);
+        const row = document.createElement("article"); row.className = "archive-entry";
+        const placeWrap = document.createElement("div"); placeWrap.className = "archive-place";
+        const pin = document.createElement("span"); pin.className = "preview-pin"; pin.textContent = "⌖";
+        const info = document.createElement("div"); info.className = "archive-place-info";
+        const name = document.createElement("div"); name.className = "archive-place-name"; name.textContent = place.name;
+        const sub = document.createElement("div"); sub.className = "archive-place-sub"; sub.textContent = place.country + " · " + place.category;
+        info.append(name, sub); placeWrap.append(pin, info);
+        const coords = document.createElement("div"); coords.className = "archive-mono archive-coords"; coords.textContent = formatCoords(place);
+        const saved = document.createElement("div"); saved.className = "archive-mono archive-saved"; saved.textContent = formatDate(record.savedAt);
+        const actions = document.createElement("div"); actions.className = "archive-actions";
+        const open = document.createElement("button"); open.className = "icon-button"; open.type = "button"; open.title = "Open this drop"; open.setAttribute("aria-label", "Open " + place.name); open.textContent = "↗";
+        open.addEventListener("click", () => { showView("discover"); renderPlace(place, {recordId:record.id}); window.scrollTo({top:0,behavior:"smooth"}); });
+        const remove = document.createElement("button"); remove.className = "icon-button delete"; remove.type = "button"; remove.title = "Remove from archive"; remove.setAttribute("aria-label", "Remove " + place.name + " from archive"); remove.textContent = "×";
+        remove.addEventListener("click", () => removeRecord(record.id));
+        actions.append(open, remove);
+        row.append(placeWrap, coords, saved, actions);
+        host.append(row);
+      });
+    }
+    function removeRecord(recordId) {
+      archive = archive.filter((record) => record.id !== recordId);
+      persistArchive();
+      renderCounts(); renderArchive(); renderRecent();
+      if (activeRecordId === recordId) {
+        const latest = archive[0];
+        if (latest) renderPlace(byIdSafe(latest.placeId), {recordId:latest.id});
+        else renderPlace(byId.get("kyoto"));
+      }
+      showToast("Drop removed from this browser’s archive.");
+    }
+    function showView(view) {
+      const isArchive = view === "archive";
+      $("#discoverView").hidden = isArchive;
+      $("#archiveView").hidden = !isArchive;
+      $("#crumbPage").textContent = isArchive ? "ARCHIVE" : "DISCOVER";
+      document.querySelectorAll(".nav-button").forEach((button) => {
+        const active = button.dataset.view === view;
+        button.classList.toggle("active", active);
+        if (active) button.setAttribute("aria-current", "page"); else button.removeAttribute("aria-current");
+      });
+      if (isArchive) renderArchive();
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+    function updateClock() {
+      const now = new Date();
+      $("#headerClock").textContent = pad(now.getUTCHours()) + ":" + pad(now.getUTCMinutes()) + ":" + pad(now.getUTCSeconds()) + " UTC";
+      if (currentPlace) $("#placeLocalTime").textContent = placeTime(currentPlace);
+    }
+    async function copyText(value) {
+      try { await navigator.clipboard.writeText(value); showToast("Copied to clipboard."); }
+      catch (_) {
+        const field = document.createElement("textarea"); field.value = value; field.style.position = "fixed"; field.style.opacity = "0"; document.body.append(field); field.select();
+        try { document.execCommand("copy"); showToast("Copied to clipboard."); } catch (_error) { showToast("Copy was blocked by this browser."); }
+        field.remove();
+      }
+    }
+    function exportArchive() {
+      if (!archive.length) { showToast("Nothing to export yet."); return; }
+      const payload = {app:"Ghost Atlas",version:1,exportedAt:new Date().toISOString(),locations:archive.map((record) => ({...record,place:byIdSafe(record.placeId)}))};
+      const blob = new Blob([JSON.stringify(payload,null,2)], {type:"application/json"});
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a"); link.href = url; link.download = "ghost-atlas-archive.json"; link.click();
+      URL.revokeObjectURL(url); showToast("Archive exported as JSON.");
+    }
+    function clearArchive() {
+      if (!archive.length) { showToast("Your archive is already empty."); return; }
+      if (!window.confirm("Clear all saved drops from this browser? Export the archive first if you want a backup.")) return;
+      archive = []; persistArchive(); renderCounts(); renderArchive(); renderRecent();
+      if (activeRecordId) renderPlace(byId.get("kyoto"));
+      showToast("Local archive cleared.");
+    }
+    function loadSharedPlace() {
+      const id = new URLSearchParams(window.location.search).get("place");
+      if (id && byIdSafe(id)) renderPlace(byIdSafe(id));
+      else if (archive.length) {
+        const record = archive[0];
+        renderPlace(byIdSafe(record.placeId), {recordId:record.id});
+      } else renderPlace(currentPlace);
+    }
+
+    document.querySelectorAll(".nav-button").forEach((button) => button.addEventListener("click", () => showView(button.dataset.view)));
+    $("#randomButton").addEventListener("click", generateDrop);
+    $("#archiveButton").addEventListener("click", () => showView("archive"));
+    $("#openAllArchive").addEventListener("click", () => showView("archive"));
+    $("#archiveSearch").addEventListener("input", renderArchive);
+    $("#copyCoords").addEventListener("click", () => copyText(formatCoords(currentPlace)));
+    $("#shareButton").addEventListener("click", () => {
+      const url = new URL(window.location.href); url.search = ""; url.searchParams.set("place", currentPlace.id);
+      copyText(url.toString());
+    });
+    $("#exportButton").addEventListener("click", exportArchive);
+    $("#clearButton").addEventListener("click", clearArchive);
+    document.addEventListener("keydown", (event) => {
+      const target = event.target;
+      const isTyping = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (!isTyping && (event.key.toLowerCase() === "r" || (event.altKey && event.key.toLowerCase() === "r"))) generateDrop();
+    });
+    renderCounts();
+    renderRecent();
+    renderArchive();
+    loadSharedPlace();
+    updateClock();
+    window.setInterval(updateClock, 1000);
+  </script>
+</body>
+</html>
 
